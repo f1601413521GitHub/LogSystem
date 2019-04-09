@@ -17,38 +17,22 @@ namespace LogSystem
     {
         public static void Main(string[] args)
         {
-            //IConfigurationRoot config = new ConfigurationBuilder()
-            //    .AddJsonFile(path: "appsettings.json", optional: true, reloadOnChange: true).Build();
-            //NLog.Extensions.Logging.ConfigSettingLayoutRenderer.DefaultConfiguration = config;
-
-            //LogManager.Configuration.Variables["connectionString"] = Configuration.GetConnectionString("MyConnectionString");
-
-            //var conn = Configuration.GetSection("DatabaseSettings").GetValue<string>("ConnectionString");
-            // NLog: setup the logger first to catch all errors
-            //var test = LogManager.GetLogger("databaseLogger");
-
             var logger = NLog.Web.NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
-
-            //string assemblyFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            //NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(assemblyFolder + "\\NLog.config", true);
 
             try
             {
-                //logger.Debug("\r\n---[start]---\r\n");
                 logger.Debug("init main");
                 CreateWebHostBuilder(args).Build().Run();
             }
             catch (Exception ex)
             {
                 //NLog: catch setup errors
-                logger.Error(ex, $"Stopped program because of exception, message:{ex.Message}");
                 //throw;
+                logger.Error(ex, $"Stopped program because of exception, message:{ex.Message}");
             }
             finally
             {
                 logger.Debug("Shutdown");
-                //logger.Debug("\r\n---[finally]---\r\n");
-
                 // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
                 NLog.LogManager.Shutdown();
             }
@@ -57,6 +41,7 @@ namespace LogSystem
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
         .UseStartup<Startup>()
+        #region TEST
         //.ConfigureLogging((hostContext, logging) =>
         //{
         //    var env = hostContext.HostingEnvironment;
@@ -87,7 +72,8 @@ namespace LogSystem
 
         //    //IConfigurationRoot config = new ConfigurationBuilder().AddJsonFile(path: "AppSettings.json").Build();
         //    //NLog.Extensions.Logging.ConfigSettingLayoutRenderer.DefaultConfiguration = config;
-        //})
+        //}) 
+        #endregion
         .UseNLog(); // NLog: setup NLog for Dependency injection
     }
 }
