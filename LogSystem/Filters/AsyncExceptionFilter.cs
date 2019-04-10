@@ -20,67 +20,32 @@ namespace LogSystem.Filters
 {
     public class AsyncExceptionFilter : IAsyncExceptionFilter
     {
-        private readonly Microsoft.Extensions.Logging.ILogger _logger;
+
+        private readonly ILogger<AsyncExceptionFilter> _logger;
+        private readonly Logger _currentLogger;
 
         public AsyncExceptionFilter(ILogger<AsyncExceptionFilter> logger)
         {
             _logger = logger;
+            _currentLogger = LogManager.GetCurrentClassLogger();
         }
-
-        private IMyLog _trace;
 
         public Task OnExceptionAsync(ExceptionContext context)
         {
             _logger.LogDebug($"{GetType().Name} in ");
-            //string id = context.ActionDescriptor.Id;
             ControllerActionDescriptor descriptor = context.ActionDescriptor as ControllerActionDescriptor;
 
 
-            ValidationProblemDetails problemDetails = new ValidationProblemDetails()
-            {
-                Instance = context.HttpContext.Request.Path,
-                Status = StatusCodes.Status400BadRequest,
-                Detail = context.Exception.Message,
-            };
-
-            problemDetails.Errors.Add("ContextId", new[] { context.ActionDescriptor.Id });
-            problemDetails.Errors.Add("Controller", new[] { descriptor.ControllerName });
-            problemDetails.Errors.Add("Action", new[] { descriptor.ActionName });
-            problemDetails.Errors.Add("dateTime", new[] { DateTime.Now.ToString("o") });
-
-            //var id = context.HttpContext.Request.Headers["X-Correlation-ID"];
-            var id = context.HttpContext.TraceIdentifier;
-
-            Logger loggerError = LogManager.GetCurrentClassLogger();
-            LogEventInfo theEventError = new LogEventInfo(LogLevel.Error, loggerError.Name, $"Custom LogEventInfoReq, loggerName: {loggerError.Name}");
-            theEventError.Properties["Controller"] = descriptor.ControllerName;
-            theEventError.Properties["Action"] = descriptor.ActionName;
-            //theEventError.Properties["Request"] = null;
-            //theEventError.Properties["Response"] = null;
-            theEventError.Properties["CreateTime"] = DateTime.Now;
-            theEventError.Properties["IsSuccess"] = (context.HttpContext.Response.StatusCode == (int)HttpStatusCode.OK);//TODO
-            //theEventError.Properties["ContextId"] = context.ActionDescriptor.Id;
-            theEventError.Properties["ContextId"] = id;
-            theEventError.Exception = context.Exception;
-            loggerError.Log(theEventError);
-
-
-            if (false)
-            {
-                //throw new Exception($"Test {GetType().Name} Error");
-                context.Result = new BadRequestObjectResult(problemDetails);
-                //context.HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-            }
-            _logger.LogDebug(new EventId(context.Exception.HResult), context.Exception, context.Exception.Message, problemDetails);
-
-
-
-            //var json = new JsonErrorResponse()
-            //{
-            //    Messages = new[] { "test" }
-            //};
-            //context.Result = new InternalServerErrorObjectResult(json);
-            //context.HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            LogEventInfo logEventInfo = new LogEventInfo(LogLevel.Info, _currentLogger.Name,
+                $"Custom LogEventInfo, loggerName: {_currentLogger.Name}");
+            logEventInfo.Properties["RequestId"] = context.HttpContext.TraceIdentifier;
+            logEventInfo.Properties["IsSuccess"] = false;
+            logEventInfo.Properties["Controller"] = descriptor.ControllerName;
+            logEventInfo.Properties["Action"] = descriptor.ActionName;
+            logEventInfo.Properties["Request"] = null;
+            logEventInfo.Properties["Response"] = null;
+            logEventInfo.Exception = context.Exception;
+            _currentLogger.Log(logEventInfo);
 
             return Task.CompletedTask;
         }

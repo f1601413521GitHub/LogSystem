@@ -17,63 +17,66 @@ namespace LogSystem
     {
         public static void Main(string[] args)
         {
-            var logger = NLog.Web.NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+            CreateWebHostBuilder(args).Build().Run();
 
-            try
-            {
-                logger.Debug("init main");
-                CreateWebHostBuilder(args).Build().Run();
-            }
-            catch (Exception ex)
-            {
-                //NLog: catch setup errors
-                //throw;
-                logger.Error(ex, $"Stopped program because of exception, message:{ex.Message}");
-            }
-            finally
-            {
-                logger.Debug("Shutdown");
-                // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
-                NLog.LogManager.Shutdown();
-            }
+            #region History
+            //var logger = NLog.Web.NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+            //try
+            //{
+            //    logger.Debug("init main");
+            //}
+            //catch (Exception ex)
+            //{
+            //    //NLog: catch setup errors
+            //    //throw;
+            //    logger.Error(ex, $"Stopped program because of exception, message:{ex.Message}");
+            //}
+            //finally
+            //{
+            //    logger.Debug("Shutdown");
+            //    // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
+            //    NLog.LogManager.Shutdown();
+            //} 
+            #endregion
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-        .UseStartup<Startup>()
-        #region TEST
-        //.ConfigureLogging((hostContext, logging) =>
-        //{
-        //    var env = hostContext.HostingEnvironment;
-        //    var builder = new ConfigurationBuilder()
-        //           .SetBasePath(env.ContentRootPath)
-        //           .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-        //           //.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-        //           //.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
-        //           .AddEnvironmentVariables();
+            .UseStartup<Startup>()
+            #region Test
+            //.ConfigureLogging((hostContext, logging) =>
+            //{
+            //    WebHostBuilderContext a = hostContext;
+            //    var env = hostContext.HostingEnvironment;
+            //    var builder = new ConfigurationBuilder()
+            //           .SetBasePath(env.ContentRootPath)
+            //           .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            //           //.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            //           //.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
+            //           .AddEnvironmentVariables();
 
-        //    // https://github.com/NLog/NLog/wiki/ConfigSetting-Layout-Renderer
-        //    NLog.Extensions.Logging.ConfigSettingLayoutRenderer.DefaultConfiguration = builder.Build();
+            //    // https://github.com/NLog/NLog/wiki/ConfigSetting-Layout-Renderer
+            //    NLog.Extensions.Logging.ConfigSettingLayoutRenderer.DefaultConfiguration = builder.Build();
 
-        //    //var env = hostContext.HostingEnvironment;
-        //    //var configuration = new ConfigurationBuilder()
-        //    //    //.SetBasePath(Path.Combine(env.ContentRootPath, "Configuration"))
-        //    //    .SetBasePath(env.ContentRootPath)
-        //    //    //.AddJsonFile(path: "settings.json", optional: true, reloadOnChange: true)
-        //    //    //.SetBasePath(env.ContentRootPath)
-        //    //    .AddJsonFile(path: "appsettings.json", optional: true, reloadOnChange: true)
-        //    //    .AddEnvironmentVariables()
-        //    //    .Build();
-        //    //logging.AddConfiguration(configuration.GetSection("Logging"));
-        //    //logging.AddConfiguration(configuration.GetSection("ConnectionString"));
+            //    //var env = hostContext.HostingEnvironment;
+            //    //var configuration = new ConfigurationBuilder()
+            //    //    //.SetBasePath(Path.Combine(env.ContentRootPath, "Configuration"))
+            //    //    .SetBasePath(env.ContentRootPath)
+            //    //    //.AddJsonFile(path: "settings.json", optional: true, reloadOnChange: true)
+            //    //    //.SetBasePath(env.ContentRootPath)
+            //    //    .AddJsonFile(path: "appsettings.json", optional: true, reloadOnChange: true)
+            //    //    .AddEnvironmentVariables()
+            //    //    .Build();
+            //    //logging.AddConfiguration(configuration.GetSection("Logging"));
+            //    //logging.AddConfiguration(configuration.GetSection("ConnectionString"));
 
-        //    //logging.ClearProviders();
-        //    //logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+            //    //logging.ClearProviders();
+            //    //logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
 
-        //    //IConfigurationRoot config = new ConfigurationBuilder().AddJsonFile(path: "AppSettings.json").Build();
-        //    //NLog.Extensions.Logging.ConfigSettingLayoutRenderer.DefaultConfiguration = config;
-        //}) 
-        #endregion
-        .UseNLog(); // NLog: setup NLog for Dependency injection
+            //    //IConfigurationRoot config = new ConfigurationBuilder().AddJsonFile(path: "AppSettings.json").Build();
+            //    //NLog.Extensions.Logging.ConfigSettingLayoutRenderer.DefaultConfiguration = config;
+            //})
+            #endregion
+            .UseNLog(); // NLog: setup NLog for Dependency injection
     }
 }

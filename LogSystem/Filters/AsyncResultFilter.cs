@@ -13,60 +13,39 @@ using LogLevel = NLog.LogLevel;
 
 namespace LogSystem.Filters
 {
-    class AsyncResultFilter : IAsyncResultFilter
+    public class AsyncResultFilter : IAsyncResultFilter
     {
-        private readonly ILogger _logger;
+
+        private readonly ILogger<AsyncResultFilter> _logger;
+        private readonly Logger _currentLogger;
 
         public AsyncResultFilter(ILogger<AsyncResultFilter> logger)
         {
             _logger = logger;
+            _currentLogger = LogManager.GetCurrentClassLogger();
         }
 
-        public Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
+        public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
         {
             _logger.LogDebug($"{GetType().Name} in ");
-            //string id = context.ActionDescriptor.Id;
             ControllerActionDescriptor descriptor = context.ActionDescriptor as ControllerActionDescriptor;
 
+
+            LogEventInfo logEventInfo = new LogEventInfo(LogLevel.Info, _currentLogger.Name,
+                $"Custom LogEventInfo, loggerName: {_currentLogger.Name}");
+            logEventInfo.Properties["RequestId"] = context.HttpContext.TraceIdentifier;
+            logEventInfo.Properties["IsSuccess"] = context.HttpContext.Response.StatusCode == (int)HttpStatusCode.OK;
+            logEventInfo.Properties["Controller"] = descriptor.ControllerName;
+            logEventInfo.Properties["Action"] = descriptor.ActionName;
+            logEventInfo.Properties["Request"] = null;
+            logEventInfo.Properties["Response"] = JsonConvert.SerializeObject(context.Result);
+            logEventInfo.Exception = null;
+            _currentLogger.Log(logEventInfo);
+
+
             _logger.LogDebug($"{GetType().Name} next ");
-            next();
-
-            //var id = context.HttpContext.Request.Headers["X-Correlation-ID"];
-            var id = context.HttpContext.TraceIdentifier;
-
-            // Set LogEventInfo Properties
-            Logger nlogger = LogManager.GetCurrentClassLogger();
-            LogEventInfo theEventRes = new LogEventInfo(LogLevel.Info, nlogger.Name, $"Custom LogEventInfoRes, loggerName: {nlogger.Name}");
-            theEventRes.Properties["Controller"] = descriptor.ControllerName;
-            theEventRes.Properties["Action"] = descriptor.ActionName;
-            //theEventRes.Properties["Request"] = requestInfo;
-            theEventRes.Properties["Response"] = JsonConvert.SerializeObject(context.Result);
-            theEventRes.Properties["CreateTime"] = DateTime.Now;
-            theEventRes.Properties["IsSuccess"] = (context.HttpContext.Response.StatusCode == (int)HttpStatusCode.OK);//TODO
-            //theEventRes.Properties["ContextId"] = context.ActionDescriptor.Id;
-            theEventRes.Properties["ContextId"] = id;
-            nlogger.Log(theEventRes);
-
+            await next();
             _logger.LogDebug($"{GetType().Name} out ");
-
-            return Task.CompletedTask;
-        }
-
-
-
-        private async Task<string> FormatResponse(HttpResponse response)
-        {
-            //We need to read the response stream from the beginning...
-            response.Body.Seek(0, SeekOrigin.Begin);
-
-            //...and copy it into a string
-            string text = await new StreamReader(response.Body).ReadToEndAsync();
-
-            //We need to reset the reader for the response so that the client can read it.
-            response.Body.Seek(0, SeekOrigin.Begin);
-
-            //Return the string for the response, including the status code (e.g. 200, 404, 401, etc.)
-            return $"{response.StatusCode}: {text}";
         }
     }
 }

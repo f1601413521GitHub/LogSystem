@@ -112,7 +112,6 @@ namespace LogSystem.Controllers
             int max = 5;
             if (id > max)
             {
-                //throw new Exception($"ERROR: id={id} > {max}, timestamp: {((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds()}");
                 throw new Exception($"ERROR: id={id} > {max}, currentTime: {DateTime.Now.ToString("HH:mm:ss.fff")}");
             }
             return "value";
