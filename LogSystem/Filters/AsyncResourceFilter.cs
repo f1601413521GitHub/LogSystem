@@ -47,7 +47,7 @@ namespace LogSystem.Filters
 
 
             LogEventInfo logEventInfo = new LogEventInfo(LogLevel.Info, _currentLogger.Name,
-                $"Custom LogEventInfo, loggerName: {_currentLogger.Name}");
+                $"Custom Request LogEventInfo, loggerName: {_currentLogger.Name}");
             logEventInfo.Properties["RequestId"] = context.HttpContext.TraceIdentifier;
             logEventInfo.Properties["IsSuccess"] = true;
             logEventInfo.Properties["Controller"] = descriptor.ControllerName;
@@ -57,9 +57,52 @@ namespace LogSystem.Filters
             logEventInfo.Exception = null;
             _currentLogger.Log(logEventInfo);
 
+            #region Test Read ResponseBody
+            var original = context.HttpContext.Response.Body;
+            try
+            {
+                using (var memory = new MemoryStream())
+                {
+                    context.HttpContext.Response.Body = memory;
 
-            _logger.LogDebug($"{GetType().Name} next ");
-            await next();
+                    _logger.LogDebug($"{GetType().Name} next ");
+                    await next();
+
+                    context.HttpContext.Response.Body.Seek(0, SeekOrigin.Begin);
+                    var reader = new StreamReader(memory);
+                    var readerFirst = await reader.ReadToEndAsync();
+
+                    #region MyRegion
+
+                    LogEventInfo logEventInfoRes = new LogEventInfo(LogLevel.Info, _currentLogger.Name,
+                        $"Custom Response LogEventInfo, loggerName: {_currentLogger.Name}");
+                    logEventInfoRes.Properties["RequestId"] = context.HttpContext.TraceIdentifier;
+                    logEventInfoRes.Properties["IsSuccess"] = context.HttpContext.Response.StatusCode == (int)HttpStatusCode.OK;
+                    logEventInfoRes.Properties["Controller"] = descriptor.ControllerName;
+                    logEventInfoRes.Properties["Action"] = descriptor.ActionName;
+                    logEventInfoRes.Properties["Request"] = null;
+                    logEventInfoRes.Properties["Response"] = JsonConvert.SerializeObject(readerFirst);// TODO check here
+                    logEventInfoRes.Exception = null;
+                    _currentLogger.Log(logEventInfoRes);
+
+                    #endregion
+
+                    context.HttpContext.Response.Body.Seek(0, SeekOrigin.Begin);
+                    await memory.CopyToAsync(original);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message, ex);
+            }
+            finally
+            {
+                context.HttpContext.Response.Body = original;
+            }
+
+            #endregion
+
+
             _logger.LogDebug($"{GetType().Name} out ");
         }
     }

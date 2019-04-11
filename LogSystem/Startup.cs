@@ -37,7 +37,7 @@ namespace LogSystem
             services.AddMvc(config =>
             {
                 config.Filters.Add(typeof(AsyncResourceFilter));
-                config.Filters.Add(typeof(AsyncResultFilter));
+                //config.Filters.Add(typeof(AsyncResultFilter));
                 config.Filters.Add(typeof(AsyncExceptionFilter));
             }).SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }
