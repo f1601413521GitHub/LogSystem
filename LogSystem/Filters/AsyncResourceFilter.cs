@@ -81,7 +81,7 @@ namespace LogSystem.Filters
                     logEventInfoRes.Properties["Controller"] = descriptor.ControllerName;
                     logEventInfoRes.Properties["Action"] = descriptor.ActionName;
                     logEventInfoRes.Properties["Request"] = null;
-                    logEventInfoRes.Properties["Response"] = JsonConvert.SerializeObject(readerFirst);// TODO check here
+                    logEventInfoRes.Properties["Response"] = String.IsNullOrEmpty(readerFirst) ? null : JsonConvert.SerializeObject(readerFirst);
                     logEventInfoRes.Exception = null;
                     _currentLogger.Log(logEventInfoRes);
 
