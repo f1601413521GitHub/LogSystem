@@ -36,7 +36,7 @@ namespace LogSystem.Filters
             HttpRequest requestContext = context.HttpContext.Request;
             requestContext.EnableRewind();
             requestContext.Body.Seek(0, SeekOrigin.Begin);
-            string readerBodyReq = new StreamReader(requestContext.Body).ReadToEnd();
+            string readerBodyReq = await new StreamReader(requestContext.Body).ReadToEndAsync();
             requestContext.Body.Seek(0, SeekOrigin.Begin);
             dynamic requestInfo = new
             {
@@ -58,7 +58,7 @@ namespace LogSystem.Filters
             _currentLogger.Log(logEventInfo);
 
             #region Test Read ResponseBody
-            var original = context.HttpContext.Response.Body;
+            Stream originalBodyRes = context.HttpContext.Response.Body;
             try
             {
                 using (var memory = new MemoryStream())
@@ -69,10 +69,9 @@ namespace LogSystem.Filters
                     await next();
 
                     context.HttpContext.Response.Body.Seek(0, SeekOrigin.Begin);
-                    var reader = new StreamReader(memory);
-                    var readerFirst = await reader.ReadToEndAsync();
+                    string readerBodyRes = await new StreamReader(memory).ReadToEndAsync();
 
-                    #region MyRegion
+                    #region LogEventInfo
 
                     LogEventInfo logEventInfoRes = new LogEventInfo(LogLevel.Info, _currentLogger.Name,
                         $"Custom Response LogEventInfo, loggerName: {_currentLogger.Name}");
@@ -81,14 +80,14 @@ namespace LogSystem.Filters
                     logEventInfoRes.Properties["Controller"] = descriptor.ControllerName;
                     logEventInfoRes.Properties["Action"] = descriptor.ActionName;
                     logEventInfoRes.Properties["Request"] = null;
-                    logEventInfoRes.Properties["Response"] = String.IsNullOrEmpty(readerFirst) ? null : JsonConvert.SerializeObject(readerFirst);
+                    logEventInfoRes.Properties["Response"] = String.IsNullOrEmpty(readerBodyRes) ? null : JsonConvert.SerializeObject(readerBodyRes);
                     logEventInfoRes.Exception = null;
                     _currentLogger.Log(logEventInfoRes);
 
                     #endregion
 
                     context.HttpContext.Response.Body.Seek(0, SeekOrigin.Begin);
-                    await memory.CopyToAsync(original);
+                    await memory.CopyToAsync(originalBodyRes);
                 }
             }
             catch (Exception ex)
@@ -97,7 +96,7 @@ namespace LogSystem.Filters
             }
             finally
             {
-                context.HttpContext.Response.Body = original;
+                context.HttpContext.Response.Body = originalBodyRes;
             }
 
             #endregion
